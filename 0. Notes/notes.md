@@ -1,10 +1,3 @@
-- non-void with parameters - computes and returns'
-- pass by value
-    - primitive types are copies
-    - objects are aliases
-- Only accessing private data of objects of the enclosing class
-    - Good practice to not modify mutable objects
-
 # Writing Methods
 
 In order to write methods to accomplish different tasks, there are a lot of minor interactions we need to understand. These minor interactions can have major impacts on programs when not acknowledged, and so are important for us to go through.
@@ -44,124 +37,130 @@ Here, we make an object out of our class to be able to use it, and we make a var
 
 In Unit 1, when we introduced variables and the primitive types, we made a special point about how primitive types are stored. The value is stored directly in the variable. This means that when Java copies the *value* for a parameter, it copies the data itself. So it made a copy of the value `5` in this example to work with, leaving the original `5` stored in `number` untouched. This interaction is consistent for primitive data type parameters: they will never be able to modify the original because the value was copied.
 
-This copy behavior takes on another form when we discuss objects though. Objects are not stored directly in their variables: instead, their memory location is stored in the variable. This means that if we copy the value of an object from a variable, we will copy its location. This means that the original variable and our new parameter will both point to the same memory location: the original object, making them **aliases** of each other. This means changes made by either one will affect the other!
+This copy behavior takes on another form when we discuss objects though. Objects are not stored directly in their variables: instead, their memory location is stored in the variable. This means that if we copy the value of an object from a variable, we will copy its location. This means that the original variable and our new parameter will both point to the same memory location: the original object, making them **aliases** of each other. This means changes made by either one *could* affect the other!
 
-Here is another method from `TempMethods.java` that will put this to the test:
+How do we know the when it can affect the other? This goes back to Unit 2 when we introduced the `String` object, and the fact that it is **immutable**, meaning it couldn't be changed, just completed replaced. Objects in Java can either be **mutable** or **immutable**, meaning they can be changed, or they cannot be changed. `String` objects are immutable, which means that you can't actually modify their value, just replace them with a whole new `String`, even if it is based on the old value. The classes we are creating and working with are mutable, which means they can be modified, and so our aliases can have an impact.
 
-```java
-
-```
-
-
-
-
-
-
-
-
-
-# Mutator Methods
-
-In Unit 5 Section 1, we discussed how both class and instance variables are almost always kept `private` to maintain the security of the values. In Unit 5 Section 4 we dove into the world of **accessor methods** to give the user a way of accessing information. Importantly though, we hadn't given them a way to modify these variables, which is where **mutator methods** come into play. This section dives into what mutator methods are and do.
-
----
-
-## Method Information
-
-Since mutator methods are **methods**, we need to generally understand methods in order to understand mutator methods. Here is a general header for a method that helps us to see the components:
+The great news is we can use objects from our new classes as parameters in methods to learn more about this interaction. Here are another two methods from `TempMethods.java` that will put this to the test:
 
 ```java
-public/private type methodName(parameter1type parameter1, parameter2type parameter2, etc.) {
-    // Not shown.
+public void modifyString(String s) {
+    s += "!";
+    System.out.println(s);
+}
+
+public void modifyPerson(Person p) {
+    p.setName("New Name");
+    System.out.println(p.getName());
 }
 ```
 
-In this header, we have a few components, which we can break down:
-- `public/private` --> Each method can be assigned either `public` or `private` (never both), indicating how accessible it is. Mutator methods will always be `public`.
-- `type` --> This is where we designate **`return` type**, essentially preemptively stating what kind of information the method is going to send back when it is done, if any. This can be any of our data types like `int`, `double`, `boolean`, or `String`, or it can send no information back, in which case we write the keyword `void` in that spot. Mutator methods will have no `return` type for the most part, since they change the value, not get the value like accessor methods did. Due to this, we will be using the keyword `void` instead of a type.
-- `methodName` --> This is the nickname to refer to this method by (like `substring`). The general rule for mutator methods, since they **set** information, is to call them `setVariableName`, so if the variable was `age`, we would call it `setAge`.
-- `(parameter1type parameter1, parameter2type parameter2, etc.)` --> Inside the parentheses, we have the **parameter list**. This is how a user sends information for the method to use (kind of like when you send a starting and ending index for `substring`). You are essentially declaring variables for this, so each needs a data type and a nickname to be referred to as, and would be separated by commas. You can have zero, one, or many parameters, as many as you need. Since mutator methods are trying to update a variable's value, we will use the parameter list to have the user give us a value. This means we will need a parameter that shares the same type as the variable we are working on (if we want to modify an `int` variable, we would need to have our parameter be an `int`).
+These methods look similar in design to our first example, as they just modify the parameters and print them, but this interaction is dangerous, as the parameters will be an alias for the original objects! For the first method `modifyString`, we don't have to worry, since `String` objects are immutable, so instead of modifying the `String` `s`, it is completely replaced with its old text and an exclamation point, now with a different memory location. For the second method `modifyPerson` on the other hand, `Person` is a mutable object, so using `setName` will change the original object, and we'll see that reflected in our test. We can do a similar test to our first one, as demonstrated in the `NotesPass2.java` file:
+
+
+```java
+TempMethods temp = new TempMethods();
+String str = "Hello, World";
+
+temp.modifyString(str);
+System.out.println(str); // What will this produce?
+
+Person person1 = new Person("Mr. G", 25);
+
+temp.modifyPerson(person1);
+System.out.println(person1.getName()); // What will this produce?
+```
+
+For the `String` example, our output should print `Hello, World!` when the method runs and then `Hello, World` after the method, since it replaced the `String` and couldn't modify the original. For the `Person` example, our output should print `New Name` when the method runs, and then `New Name` after the method, since it modified the original object and the name change stayed. Here is the output:
+
+```
+Hello, World!
+Hello, World
+New Name
+New Name
+```
+
+In summary, **pass by value** means that a method cannot modify parameters that are based on primitive values or immutable objects, but can modify parameters that are based on mutable objects.
 
 ---
 
-## Basic Mutator Methods
+## Access to `private` Data
 
-By definition, a mutator method changes the values of instance variables or class variables. Here is an example of a mutator method from the `Person.java` file:
+As demonstrated with accessor methods in Unit 5 Section 4 and mutator methods in Unit 5 Section 5, we can use methods to access things like variables that are marked as `private`. This isn't always the case though, as we start to mix classes together with different methods. We can see this in action going back to our `modifyPerson` method from the `TempMethods.java` file:
 
 ```java
-public void setName(String n) {
-    name = n;
+public void modifyPerson(Person p) {
+    p.setName("New Name");
+    System.out.println(p.getName());
 }
-
 ```
 
-This mutator method is working on the `name` instance variable in our `Person` class. It takes in a `String` value as a parameter and gives is the nickname `n`, so when we are inside the method, we can set our instance variable `name` to whatever value `n` represents with `name = n`. This is the simplest kind of mutator method, as it just takes the new value and replaces the old one.
+Following our earlier line of reasoning, it would make sense to say that since this is a method, we should just be able to use `p.name = "New Name";` instead of `p.setName("New Name");`. Unfortunately, if we do that, we get an error like we saw in the last section that reads "The field `Person.name` is not visible". So even though this is a method, it doesn't have access to `private` data. This comes down entirely to what class we are in. This method is in the `TempMethods` class, not the `Person` class, so it cannot access `private` data from a `Person` object. Any method in the `Person` class though, would have access to this data *even if* it was a parameter. Here is a new example from the `Person.java` file:
 
-Here are a few examples of using this mutator from the `NotesMutator1.java` file, where we use the accessor `getName` to print out `name` and watch what happens to it:
+```java
+public void copyName(Person p) {
+    name = p.name;
+}
+```
+
+While this works, there is some new confusion that can arise. Whose name is `name` referring to versus whose name is `p.name` referring to? Even though we only see the `Person` `p` here, we have to remember that this method would have to be called by a `Person`, which is who `name` is for, while the parameter `p` is responsible for `p.name`. Let's look at this in an example from the `NotesPrivate1.java` file:
 
 ```java
 Person person1 = new Person("Mr. G", 25);
-System.out.println(person1.getName());
+Person person2 = new Person("Sam", 34);
+System.out.println(person1);
+System.out.println(person2);
+System.out.println();
 
-person1.setName("John");
-System.out.println(person1.getName());
+person1.copyName(person2);
 
-person1.setName("Guzauckas");
-System.out.println(person1.getName());
+System.out.println(person1);
+System.out.println(person2);
 ```
 
-This prints out each `name` over time, producing the following output:
+In this example, we create two people referred to as `person1` and `person2`. When we print those people out, it calls the `toString` method and prints a sentence with their name and age. Then we have `person1.copyName(person2);`, which calls `copyName` as `person1` with `person2` as a parameter. This means that looking back at the method code, `name` is for `person1` and `p.name` is for `person2`. This means that `person1`'s `name` is changed to whatever `person2`'s `name` is, so it should be changed to `"Sam"`. This should be reflected in the `toString` printed outputs afterwards. Here is the output:
 
 ```
-Mr. G
-John
-Guzauckas
+Mr. G is 25 years old.
+Sam is 34 years old.
+
+Sam is 25 years old.
+Sam is 34 years old.
 ```
+
+Because this method is in the `Person` class, we can get direct access to `private` instance variables of a `Person`, even when they are parameters in the method!
+
+An important note about good programming practices: With this interaction, we could easily have modified the `Person` object `p` in our method, maybe copying the names in the other direction. It is considered poor practice to modify mutable objects that have been passed in as parameters unless required by the specifications of the project. 
 
 ---
 
-## Restrictive Mutator Methods
+## General Methods
 
-Sometimes though, we should be more restrictive. Names can be anything, but can an age be any number? Negative numbers wouldn't make sense for an age, and neither would numbers that are too large (the oldest living person ever verified was 122 years old). So we can say that age should be limited between 0 and 125, inclusive, to be safe. A good mutator method for `age` then, would check the value it is being provided to decide if it is appropriate to save to the variable, and skip over saving the information if it is not. Here is an example of the mutator for `age` from the `Person.java` file:
+With these interactions in tow, we can make a method to do whatever we want, to a certain extent. We can use information provided by the header of a method to determine what to do. For example, here is an incomplete method from the `TempMethods.java` file:
 
 ```java
-public void setAge(int a) {
-    if (a >= 0 && a <= 125) {
-        age = a;
-    }
+public int addNumbers(int a, int b) {
+    // Not Shown.
 }
 ```
 
-The `if` statement is set up using the user input parameter `a` to check if it is appropriate (is it both greater than or equal to 0 and less than or equal to 125). If it meets those criteria, it sets the variable. Otherwise, it just doesn't, and the old value is maintained. This is a silent process!
+While oftentimes you are given way more information than this, we can totally figure out what this method needs to do using the accompanying information. Here is what we can pull out of this method header to determine what to do:
+- The `return` type is `int`, so they expect us to `return` an `int` value at some point.
+- The name of the method is `addNumbers`, so we can expect that we should be adding numbers together. When combined with our `return` type, it would make sense to return an `int` final answer after we have added numbers together
+- The parameter list is `(int a, int b)`, so we are given two numbers to work with. When combined with the previous two pieces of information, it seems like these are the values that should be added together and then returned as an answer!
 
-We can see this in action from the `NotesMutator2.java` file, where we use the accessor `getAge` to print out `age` and watch what happens to it:
+Using this information, we could fill in this method with the following:
 
 ```java
-Person person1 = new Person("Mr. G", 25);
-System.out.println(person1.getAge());
-
-person1.setAge(26);
-System.out.println(person1.getAge());
-
-person1.setAge(-5);
-System.out.println(person1.getAge());
-
-person1.setAge(130);
-System.out.println(person1.getAge());
-
-person1.setAge(25);
-System.out.println(person1.getAge());
+public int addNumbers(int a, int b) {
+    return a + b;
+}
 ```
 
-Here, we can expect the `age` to change from `25` to `26`, but then fail to change to `-5` and `130` (and therefore will continue to print the most recent age of `26`), and then finally get changed back to `25`:
-
-```
-25
-26
-26
-26
-25
-```
+We could consider these general ideas when trying to determine how to fill in a method:
+- The `return` type indicates whether or not you have a "final answer". `void` would mean there is no "final answer", or that it is printed, while any other type is a clue as to what you are supposed to do.
+- The name of the method could indicate what kind of process is going on. As programmers, we try to name our methods to describe their uses, so that you aren't remembering really arbitary names like `duck` for a method that adds numbers together.
+- The parameter list can tell you more about that process you are working out. Adding numbers is great, but returning an `int` only makes sense if the numbers being added are `int` values as well, if they are `double` values, this might change your approach. You could also not have parameters, indicating that this might be more reliant on instance variables in the class as opposed to parameters.
 
 ---
 

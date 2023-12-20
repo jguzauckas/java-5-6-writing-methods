@@ -33,4 +33,8 @@ public class Person {
     public String toString() {
         return name + " is " + age + " years old.";
     }
+
+    public void copyName(Person p) {
+        name = p.name;
+    }
 }
